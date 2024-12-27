@@ -25,12 +25,24 @@ def send_response(client_socket, client_address, response_code, size=None):
                 f"{html_content}"
             )
         case 400:
-            response_message = "HTTP/1.0 400 Bad Request\r\n"
+            response_message = (
+                "HTTP/1.0 400 Bad Request\r\n"
+                "Content-Length: 0\r\n"
+                "\r\n"
+            )
         case 501:
-            response_message = "HTTP/1.0 501 Not Implemented\r\n"
-        case _:
-            response_message = "HTTP/1.0 500 Internal Server Error\r\n"
+            response_message = (
+                "HTTP/1.0 501 Not Implemented\r\n"
+                "Content-Length: 0\r\n"
+                "\r\n"
+            )
 
+        case _:
+            response_message = (
+                "HTTP/1.0 500 Internal Server Error\r\n"
+                "Content-Length: 0\r\n"
+                "\r\n"
+            )
     client_socket.sendall(response_message.encode('utf-8'))
     print(f"Response to {client_address}:\n{response_message}")
 
