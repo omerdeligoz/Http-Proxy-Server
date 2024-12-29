@@ -1,5 +1,5 @@
 import socket
-import threading
+from concurrent.futures import ThreadPoolExecutor
 
 # Constants
 MIN_SIZE = 100
@@ -96,21 +96,22 @@ def handle_client(client_socket, client_address):
 
 def start_server(port):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind(("", port))
     server.listen(5)
     print(f"Server listening on port {port}")
 
-    while True:
-        try:
-            client_socket, client_address = server.accept()
-            print("-" * 100)
-            print(f"Accepted connection from {client_address}")
-            client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-            client_thread.start()
-        except KeyboardInterrupt:
-            print("\nShutting down the server...")
-            server.close()
-            break
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        while True:
+            try:
+                client_socket, client_address = server.accept()
+                print("-" * 100)
+                print(f"Accepted connection from {client_address}")
+                executor.submit(handle_client, client_socket, client_address)
+            except KeyboardInterrupt:
+                print("\nShutting down the server...")
+                server.close()
+                break
 
 
 if __name__ == "__main__":

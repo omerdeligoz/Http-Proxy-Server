@@ -1,9 +1,8 @@
 import glob
 import socket
-import subprocess
-import threading
 from urllib.parse import urlparse
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 # Constants
 CACHE_DIR = "cache"
@@ -194,21 +193,21 @@ def handle_proxy_client(client_socket, client_address):
 
 def start_proxy_server():
     proxy_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    proxy_server.bind(("127.0.0.1", PROXY_PORT))
+    proxy_server.bind(("", PROXY_PORT))
     proxy_server.listen(5)
     print(f"Proxy server listening on port {PROXY_PORT} with max cache size {MAX_CACHE_SIZE}...")
 
-    while True:
-        try:
-            client_socket, client_address = proxy_server.accept()
-            print("-" * 100)
-            print(f"Accepted connection from {client_address}")
-            client_thread = threading.Thread(target=handle_proxy_client, args=(client_socket, client_address))
-            client_thread.start()
-        except KeyboardInterrupt:
-            print("\nShutting down the proxy server...")
-            proxy_server.close()
-            break
+    with ThreadPoolExecutor(max_workers=100) as executor:
+        while True:
+            try:
+                client_socket, client_address = proxy_server.accept()
+                print("-" * 100)
+                print(f"Accepted connection from {client_address}")
+                executor.submit(handle_proxy_client, client_socket, client_address)
+            except KeyboardInterrupt:
+                print("\nShutting down the proxy server...")
+                proxy_server.close()
+                break
 
 
 if __name__ == "__main__":
